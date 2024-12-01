@@ -57,11 +57,9 @@ export async function POST(request: Request) {
     z.object({
       name: z.string().describe("The name of the menu item"),
       price: z.string().describe("The price of the menu item"),
-      description: z
-        .string()
-        .describe(
-          "The description of the menu item. If this doesn't exist, please write a short one sentence description."
-        ),
+      description: z.string().describe(
+        "The description of the menu item. If this doesn't exist, please write a short one sentence description."
+      ),
     })
   );
   const jsonSchema = zodToJsonSchema(menuSchema, "menuSchema");

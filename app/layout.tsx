@@ -4,6 +4,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import PlausibleProvider from "next-plausible";
+import { AuthProvider } from "@/components/auth-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 const title = "PicMenu – Visualize your menu items with nice images";
@@ -49,9 +50,11 @@ export default function RootLayout({
       <body
         className={`${inter.className} flex flex-col min-h-screen bg-white text-gray-800`}
       >
-        <Header />
-        <main className="flex-grow">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Header />
+          <main className="flex-grow">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { MenuGrid } from "@/components/menu-grid";
 import Image from "next/image";
 import { italianMenuUrl, italianParsedMenu } from "@/lib/constants";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 export interface MenuItem {
   name: string;
@@ -26,27 +29,58 @@ export default function Home() {
   >("initial");
   const [parsedMenu, setParsedMenu] = useState<MenuItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
 
   const handleFileChange = async (file: File) => {
-    const objectUrl = URL.createObjectURL(file);
-    setStatus("uploading");
-    setMenuUrl(objectUrl);
-    const { url } = await uploadToS3(file);
-    setMenuUrl(url);
-    setStatus("parsing");
-
-    const res = await fetch("/api/parseMenu", {
-      method: "POST",
-      body: JSON.stringify({
-        menuUrl: url,
-      }),
-    });
-    const json = await res.json();
-
-    console.log({ json });
-
-    setStatus("created");
-    setParsedMenu(json.menu);
+    try {
+      setError(null);
+      setProgress(0);
+      setStatus("uploading");
+      
+      // Upload to S3
+      setProgress(20);
+      const { url } = await uploadToS3(file);
+      setMenuUrl(url);
+      
+      setStatus("parsing");
+      setProgress(40);
+      
+      // Parse menu
+      const res = await fetch("/api/parseMenu", {
+        method: "POST",
+        body: JSON.stringify({ menuUrl: url }),
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to parse menu");
+      }
+      
+      setProgress(60);
+      const json = await res.json();
+      setParsedMenu(json.menu);
+      
+      // Generate videos
+      setProgress(80);
+      const videoRes = await fetch("/api/createVideo", {
+        method: "POST",
+        body: JSON.stringify({ menuUrl: url }),
+      });
+      
+      if (!videoRes.ok) {
+        throw new Error("Failed to generate videos");
+      }
+      
+      setProgress(100);
+      const videoJson = await videoRes.json();
+      
+      if (videoJson.success) {
+        router.push(`/video?menuId=${videoJson.menuId}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      setStatus("initial");
+    }
   };
 
   const handleSampleImage = async () => {
@@ -64,6 +98,24 @@ export default function Home() {
 
   return (
     <div className="container text-center px-4 py-8 bg-white max-w-5xl mx-auto">
+      {error && (
+        <ErrorMessage
+          message={error}
+          onRetry={() => {
+            setError(null);
+            setStatus("initial");
+          }}
+        />
+      )}
+      
+      {status === "uploading" && (
+        <ProgressBar progress={progress} message="Uploading menu..." />
+      )}
+      
+      {status === "parsing" && (
+        <ProgressBar progress={progress} message="Processing menu..." />
+      )}
+      
       <div className="max-w-2xl text-center mx-auto sm:mt-20 mt-2">
         <p className="mx-auto mb-5 w-fit rounded-2xl border px-4 py-1 text-sm text-slate-500">
           100% free and powered by{" "}

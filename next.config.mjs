@@ -4,7 +4,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "napkinsdev.s3.us-east-1.amazonaws.com",
+        hostname: "s3-for-menu.s3.ap-northeast-1.amazonaws.com",
         pathname: "/next-s3-uploads/**",
       },
     ],

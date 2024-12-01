@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // 添加密码字段
+  name      String?
+  createdAt DateTime @default(now())
+  menus     Menu[]
+}
+
+model Menu {
+  id            String         @id @default(uuid())
+  originalUrl   String        // 原始菜单图片URL
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  status        MenuStatus    @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  menuItems     MenuItem[]
+  error         String?       // 如果处理失败，存储错误信息
+}
+
+model MenuItem {
+  id           String    @id @default(uuid())
+  menuId       String
+  menu         Menu      @relation(fields: [menuId], references: [id])
+  name         String
+  price        String
+  description  String
+  imageUrl     String?   // Together AI 生成的图片URL
+  animationUrl String?   // RunwayML 生成的动画URL
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum MenuStatus {
+  PENDING
+  PROCESSING_IMAGES
+  PROCESSING_VIDEOS
+  COMPLETED
+  FAILED
+} 
